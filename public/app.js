@@ -287,7 +287,7 @@ function initSocket() {
 }
 
 /* ============================================================
-   ЧАТ (компонент)
+   ЧАТ
    ============================================================ */
 function chatMsgHTML(m) {
   return '<div class="chat-msg"><span class="chat-name" data-uid="' + esc(m.userId) + '">' +
@@ -416,7 +416,7 @@ async function homeView(view) {
 }
 
 /* ============================================================
-   ЛОББИ (без чата, 2 колонки)
+   ЛОББИ (чат убран)
    ============================================================ */
 function tcPickerHTML(id, active) {
   const tcs = Object.keys(TC_LABELS);
@@ -439,7 +439,7 @@ function tcOf(id) {
 }
 
 async function lobbyView(view) {
-  sjoin('lobby'); // без sjoin('global')
+  sjoin('lobby');
   view.innerHTML =
     '<section class="block">' +
     '<div class="page-head"><div><h1>Играть</h1><p>Создайте вызов, займите очередь в арене или присоединитесь к открытой партии</p></div></div>' +
@@ -732,7 +732,7 @@ function paintTournament(t) {
 }
 
 /* ============================================================
-   ПАРТИЯ (три колонки: чат | доска | ходы)
+   ПАРТИЯ (чат слева, доска по центру, ходы справа)
    ============================================================ */
 let G = null;
 let selSq = null;
@@ -757,8 +757,8 @@ async function gamePage(view, id) {
 
   view.innerHTML =
     '<section class="block game-block">' +
-    '<div class="game-layout game-layout-3">' +
-    '<div class="game-side game-side-left">' +
+    '<div class="game-layout game-3col">' +
+    '<div class="game-side-left">' +
     chatHTML('g:' + id, 'Чат партии') +
     '</div>' +
     '<div class="game-board-col">' +
@@ -767,7 +767,7 @@ async function gamePage(view, id) {
     '<div class="gplayer" id="bottomPlayer"></div>' +
     '<div class="game-actions" id="gameActions"></div>' +
     '</div>' +
-    '<div class="game-side game-side-right">' +
+    '<div class="game-side-right">' +
     '<div class="panel moves-panel"><h3>Ходы</h3><div class="move-list" id="moveList"></div></div>' +
     '</div>' +
     '</div></section>';
@@ -1108,23 +1108,6 @@ function learnView(view) {
   }
 })();
 
-window.addEventListener('hashchange', render);
-
-async function boot() {
-  renderAuthArea();
-  if (state.token) {
-    try {
-      const me = await api('/api/me');
-      state.user = me.user;
-      if (!me.user) { state.token = null; localStorage.removeItem('ch_token'); }
-    } catch (e) {}
-  }
-  renderAuthArea();
-  initSocket();
-  render();
-}
-
-boot();
 window.addEventListener('hashchange', render);
 
 async function boot() {
