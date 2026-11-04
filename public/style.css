@@ -498,3 +498,35 @@ footer { border-top: 1px solid rgba(255,255,255,.06); padding: 24px 20px; }
   .table { font-size: .82rem; }
   .table th, .table td { padding: 8px 6px; }
 }
+
+/* ===== ПАРТИЯ — трёхколоночный layout: чат слева | доска | ходы справа ===== */
+.game-layout.game-3col {
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) minmax(200px, 260px);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.game-3col .game-board-col { max-width: 100%; margin: 0; }
+.game-3col .game-side-left,
+.game-3col .game-side-right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 84px;
+}
+.game-3col .game-side-left .chat-panel { height: 520px; }
+.game-3col .game-side-right .moves-panel { margin-bottom: 0; }
+.game-3col .game-side-right .move-list { max-height: 520px; overflow-y: auto; }
+
+@media (max-width: 980px) {
+  .game-layout.game-3col { grid-template-columns: 1fr; }
+  .game-3col .game-side-left,
+  .game-3col .game-side-right { position: static; }
+  .game-3col .game-side-left .chat-panel { height: 320px; }
+}
+
+/* ===== ЛОББИ — без чата, две колонки ===== */
+.lobby-grid {
+  grid-template-columns: 1fr 1fr;
+}
+.lobby-side { display: none; }
