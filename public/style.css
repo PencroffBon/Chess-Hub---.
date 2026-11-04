@@ -168,7 +168,7 @@ section.block { max-width: 1200px; margin: 0 auto; padding: 40px 20px 56px; widt
 .card h3 { font-size: 1.05rem; margin-bottom: 6px; }
 .card p { font-size: .88rem; color: var(--text-muted); }
 
-/* ===== ИГРОКИ — фикс выпирающего рейтинга ===== */
+/* ===== ИГРОКИ ===== */
 .players { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
 .player {
   display: flex; align-items: center; gap: 12px; min-width: 0;
@@ -183,7 +183,6 @@ section.block { max-width: 1200px; margin: 0 auto; padding: 40px 20px 56px; widt
 }
 .avatar.sm { width: 32px; height: 32px; font-size: .85rem; }
 .avatar.xl { width: 72px; height: 72px; font-size: 1.6rem; }
-/* ключевой фикс: имя сжимается с многоточием, рейтинг никогда не вылезает */
 .player .info { min-width: 0; flex: 1; }
 .player .info b {
   display: block; font-size: .95rem;
@@ -260,8 +259,9 @@ footer { border-top: 1px solid rgba(255,255,255,.06); padding: 24px 20px; }
 .toast.err { border-color: rgba(255,90,90,.5); }
 
 /* ===== ЛОББИ ===== */
-.lobby-grid { display: grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
-.lobby-side { position: sticky; top: 84px; }
+/* ИЗМЕНЕНО: было 1fr 300px (для чата), стало 1fr 1fr — 2 колонки без чата */
+.lobby-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+.lobby-side { display: none; } /* ИЗМЕНЕНО: на всякий случай прячем */
 .tc-picker { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
 .tc-chip {
   padding: 8px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,.1);
@@ -425,6 +425,25 @@ footer { border-top: 1px solid rgba(255,255,255,.06); padding: 24px 20px; }
 .mv:hover { background: rgba(255,255,255,.04); }
 .mv-num { color: var(--text-muted); }
 
+/* ИЗМЕНЕНО: трёхколоночный layout игры — чат слева, доска по центру, ходы справа */
+.game-layout.game-3col {
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) minmax(200px, 260px);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.game-3col .game-board-col { max-width: 100%; margin: 0; }
+.game-3col .game-side-left,
+.game-3col .game-side-right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 84px;
+}
+.game-3col .game-side-left .chat-panel { height: 520px; }
+.game-3col .game-side-right .moves-panel { margin-bottom: 0; }
+.game-3col .game-side-right .move-list { max-height: 520px; overflow-y: auto; }
+
 /* ===== ПРОФИЛЬ ===== */
 .profile-head { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
 .profile-title h1 { font-size: 1.5rem; display: flex; align-items: center; gap: 10px; }
@@ -456,6 +475,11 @@ footer { border-top: 1px solid rgba(255,255,255,.06); padding: 24px 20px; }
   .lobby-side, .tour-chat { position: static; }
   .tour-chat .chat-panel { height: 380px; }
   .game-layout { grid-template-columns: 1fr; }
+  /* ИЗМЕНЕНО: на узких экранах три колонки складываем в одну */
+  .game-layout.game-3col { grid-template-columns: 1fr; }
+  .game-3col .game-side-left,
+  .game-3col .game-side-right { position: static; }
+  .game-3col .game-side-left .chat-panel { height: 320px; }
 }
 @media (max-width: 760px) {
   .nav-links, .nav-actions { display: none; }
