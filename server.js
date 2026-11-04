@@ -14,7 +14,6 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
-
 /* ================= Утилиты ================= */
 const uid = () => crypto.randomBytes(8).toString('hex');
 const newToken = () => crypto.randomBytes(24).toString('hex');
