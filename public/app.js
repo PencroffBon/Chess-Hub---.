@@ -287,7 +287,7 @@ function initSocket() {
 }
 
 /* ============================================================
-   ЧАТ
+   ЧАТ (компонент)
    ============================================================ */
 function chatMsgHTML(m) {
   return '<div class="chat-msg"><span class="chat-name" data-uid="' + esc(m.userId) + '">' +
@@ -416,7 +416,7 @@ async function homeView(view) {
 }
 
 /* ============================================================
-   ЛОББИ (чат убран)
+   ЛОББИ (без чата, 2 колонки)
    ============================================================ */
 function tcPickerHTML(id, active) {
   const tcs = Object.keys(TC_LABELS);
@@ -439,12 +439,11 @@ function tcOf(id) {
 }
 
 async function lobbyView(view) {
-  sjoin('lobby');
+  sjoin('lobby'); // без sjoin('global')
   view.innerHTML =
     '<section class="block">' +
     '<div class="page-head"><div><h1>Играть</h1><p>Создайте вызов, займите очередь в арене или присоединитесь к открытой партии</p></div></div>' +
     '<div class="lobby-grid">' +
-    '<div class="lobby-main">' +
     '<div class="panel"><h2>Создать вызов</h2>' +
     tcPickerHTML('tcPicker', '10+5') +
     '<div class="color-picker" id="colorPicker">' +
@@ -459,7 +458,6 @@ async function lobbyView(view) {
     '<div class="arena-status" id="arenaStatus"></div></div>' +
     '<div class="panel"><h2>Открытые вызовы</h2><div id="openList"><div class="empty-note">Загрузка…</div></div></div>' +
     '<div class="panel"><h2>Идут сейчас</h2><div id="liveList"><div class="empty-note">Загрузка…</div></div></div>' +
-    '</div>' +
     '</div></section>';
 
   bindTcPicker('tcPicker');
@@ -734,7 +732,7 @@ function paintTournament(t) {
 }
 
 /* ============================================================
-   ПАРТИЯ (чат слева, доска справа)
+   ПАРТИЯ (три колонки: чат | доска | ходы)
    ============================================================ */
 let G = null;
 let selSq = null;
@@ -759,16 +757,18 @@ async function gamePage(view, id) {
 
   view.innerHTML =
     '<section class="block game-block">' +
-    '<div class="game-layout">' +
-    '<div class="game-side">' +
+    '<div class="game-layout game-layout-3">' +
+    '<div class="game-side game-side-left">' +
     chatHTML('g:' + id, 'Чат партии') +
-    '<div class="panel moves-panel"><h3>Ходы</h3><div class="move-list" id="moveList"></div></div>' +
     '</div>' +
     '<div class="game-board-col">' +
     '<div class="gplayer" id="topPlayer"></div>' +
     '<div class="board-wrap game-board" id="gBoard"></div>' +
     '<div class="gplayer" id="bottomPlayer"></div>' +
     '<div class="game-actions" id="gameActions"></div>' +
+    '</div>' +
+    '<div class="game-side game-side-right">' +
+    '<div class="panel moves-panel"><h3>Ходы</h3><div class="move-list" id="moveList"></div></div>' +
     '</div>' +
     '</div></section>';
 
@@ -1108,6 +1108,23 @@ function learnView(view) {
   }
 })();
 
+window.addEventListener('hashchange', render);
+
+async function boot() {
+  renderAuthArea();
+  if (state.token) {
+    try {
+      const me = await api('/api/me');
+      state.user = me.user;
+      if (!me.user) { state.token = null; localStorage.removeItem('ch_token'); }
+    } catch (e) {}
+  }
+  renderAuthArea();
+  initSocket();
+  render();
+}
+
+boot();
 window.addEventListener('hashchange', render);
 
 async function boot() {
