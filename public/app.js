@@ -3,6 +3,7 @@
    ============================================================ */
 'use strict';
 
+/* ---------- Утилиты ---------- */
 const $ = (s, r) => (r || document).querySelector(s);
 const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
 function esc(s) {
@@ -25,7 +26,10 @@ const PIECE_URL = {
   bN: 'https://commons.wikimedia.org/wiki/Special:FilePath/Chess_ndt45.svg',
   bP: 'https://commons.wikimedia.org/wiki/Special:FilePath/Chess_pdt45.svg'
 };
-const FEN_TO_KEY = { P:'wP',N:'wN',B:'wB',R:'wR',Q:'wQ',K:'wK',p:'bP',n:'bN',b:'bB',r:'bR',q:'bQ',k:'bK' };
+const FEN_TO_KEY = {
+  P: 'wP', N: 'wN', B: 'wB', R: 'wR', Q: 'wQ', K: 'wK',
+  p: 'bP', n: 'bN', b: 'bB', r: 'bR', q: 'bQ', k: 'bK'
+};
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const MEDALS = ['🥇', '🥈', '🥉'];
 const TC_LABELS = {
@@ -68,7 +72,7 @@ function renderBoard(container, fen, opts) {
   container.innerHTML = '';
   const board = document.createElement('div');
   board.className = 'board';
-  const rows = [0,1,2,3,4,5,6,7], cols = [0,1,2,3,4,5,6,7];
+  const rows = [0, 1, 2, 3, 4, 5, 6, 7], cols = [0, 1, 2, 3, 4, 5, 6, 7];
   if (flip) { rows.reverse(); cols.reverse(); }
   for (const r of rows) for (const c of cols) {
     const key = 'abcdefgh'[c] + (8 - r);
@@ -93,7 +97,7 @@ async function api(path, opts) {
   opts = opts || {};
   const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
   if (state.token) headers.Authorization = 'Bearer ' + state.token;
-  const res = await fetch(path, Object.assign({}, opts, { headers }));
+  const res = await fetch(path, Object.assign({}, opts, { headers: headers }));
   let data = null;
   try { data = await res.json(); } catch (e) {}
   if (!res.ok) throw new Error((data && data.error) || ('Ошибка ' + res.status));
@@ -153,6 +157,7 @@ function renderAuthArea() {
     $('#loginBtn').onclick = function () { openAuth('login'); };
     $('#signupBtn').onclick = function () { openAuth('signup'); };
   }
+  // мобильное меню
   const mm = $('#mobileMenu');
   if (mm) {
     mm.innerHTML = '<a href="#/lobby">Играть</a><a href="#/tournaments">Турниры</a>' +
@@ -320,7 +325,7 @@ async function bindChats() {
       const input = f.querySelector('.chat-input');
       const text = input.value.trim();
       if (!text) return;
-      socket.emit('chat', { room: f.dataset.room, text });
+      socket.emit('chat', { room: f.dataset.room, text: text });
       input.value = '';
     };
   });
@@ -338,6 +343,8 @@ function parseHash() {
   const parts = h.split('/').filter(Boolean);
   return { page: parts[0] || '', arg: parts[1] || null };
 }
+
+let clockTimer = null;
 
 async function render() {
   leaveAllRooms();
@@ -395,7 +402,7 @@ async function homeView(view) {
 
   renderBoard($('#demoBoard'), START_FEN, {});
   $('#playBtn').onclick = function () { location.hash = '#/lobby'; };
-  $('#ctaSignup').onclick = function () { openAuth(state.user ? 'login' : 'signup'); if (state.user) toast('Вы уже вошли'); };
+  $('#ctaSignup').onclick = function () { openAuth(state.user ? 'login' : 'signup'); if (state.user) toast('Вы уже вошли в аккаунт'); };
   $$('[data-go]', view).forEach(function (c) { c.onclick = function () { location.hash = c.dataset.go; }; });
 
   try {
@@ -416,7 +423,7 @@ async function homeView(view) {
 }
 
 /* ============================================================
-   ЛОББИ (чат убран)
+   ЛОББИ — БЕЗ ЧАТА
    ============================================================ */
 function tcPickerHTML(id, active) {
   const tcs = Object.keys(TC_LABELS);
@@ -472,7 +479,7 @@ async function lobbyView(view) {
     try {
       if (!state.user) return openAuth('signup');
       const color = $('#colorPicker .color-chip.active').dataset.color;
-      const r = await api('/api/challenges', { method: 'POST', body: JSON.stringify({ tc: tcOf('tcPicker'), color }) });
+      const r = await api('/api/challenges', { method: 'POST', body: JSON.stringify({ tc: tcOf('tcPicker'), color: color }) });
       location.hash = '#/game/' + r.id;
     } catch (e) { toast(e.message, 'err'); }
   };
@@ -485,6 +492,7 @@ async function lobbyView(view) {
     } catch (e) { toast(e.message, 'err'); }
   };
   await refreshLobbyLists();
+  // УБРАНО: await bindChats() — чата в лобби больше нет
 }
 
 function paintArenaWaiting() {
@@ -658,11 +666,11 @@ function paintTournament(t) {
   let actions = '';
   if (t.status === 'open') {
     if (t.isCreator) {
-      actions = '<button class="btn btn-primary" id="tourStartBtn"' + (t.playersCount < 2 ? ' disabled' : '') + '>▶ Стартовать</button>';
+      actions = '<button class="btn btn-primary" id="tourStartBtn"' + (t.playersCount < 2 ? ' disabled title="Нужно минимум 2 участника"' : '') + '>▶ Стартовать</button>';
     } else if (t.joined) {
       actions = '<button class="btn btn-ghost" id="tourLeaveBtn">Покинуть</button>';
     } else {
-      actions = '<button class="btn btn-primary" id="tourJoinBtn">Вступить в турнир</button>';
+      actions = '<button class="btn btn-primary" id="tourJoinBtn"' + (state.user ? '' : ' data-need-auth') + '>Вступить в турнир</button>';
     }
   }
   let html =
@@ -702,29 +710,29 @@ function paintTournament(t) {
     }).join('');
     html += '</div>';
   } else {
-    html += '<div class="panel"><h2>Как это будет работать</h2><p class="sub">После старта игроки разбиваются на пары по очкам каждый раунд. Победитель определится по сумме очков.</p></div>';
+    html += '<div class="panel"><h2>Как это будет работать</h2><p class="sub">После старта игроки разбиваются на пары по очкам каждый раунд. Всего раундов: ' + t.totalRounds + '. Победитель определится по сумме очков, при равенстве — по коэффициенту Бухгольца.</p></div>';
   }
 
   box.innerHTML = html;
 
-  const jb = $('#tourJoinBtn');
-  if (jb) jb.onclick = async function () {
+  const joinBtn = $('#tourJoinBtn');
+  if (joinBtn) joinBtn.onclick = async function () {
     if (!state.user) return openAuth('signup');
     try { await api('/api/tournaments/' + t.id + '/join', { method: 'POST' }); toast('Вы в турнире!'); }
     catch (e) { toast(e.message, 'err'); }
   };
-  const lb = $('#tourLeaveBtn');
-  if (lb) lb.onclick = async function () {
+  const leaveBtn = $('#tourLeaveBtn');
+  if (leaveBtn) leaveBtn.onclick = async function () {
     try { await api('/api/tournaments/' + t.id + '/leave', { method: 'POST' }); }
     catch (e) { toast(e.message, 'err'); }
   };
-  const sb = $('#tourStartBtn');
-  if (sb) sb.onclick = async function () {
-    try { await api('/api/tournaments/' + t.id + '/start', { method: 'POST' }); toast('Турнир начался!'); }
+  const startBtn = $('#tourStartBtn');
+  if (startBtn) startBtn.onclick = async function () {
+    try { await api('/api/tournaments/' + t.id + '/start', { method: 'POST' }); toast('Турнир начался! Пары первого раунда созданы.'); }
     catch (e) { toast(e.message, 'err'); }
   };
-  const cb = $('#copyTourLink');
-  if (cb) cb.onclick = function () {
+  const copyBtn = $('#copyTourLink');
+  if (copyBtn) copyBtn.onclick = function () {
     const url = location.origin + '/#/tournament/' + t.id;
     if (navigator.clipboard) navigator.clipboard.writeText(url).then(function () { toast('Ссылка скопирована!'); });
     else toast(url);
@@ -732,7 +740,7 @@ function paintTournament(t) {
 }
 
 /* ============================================================
-   ПАРТИЯ (чат слева, доска по центру, ходы справа)
+   ПАРТИЯ — три колонки: чат слева | доска | ходы справа
    ============================================================ */
 let G = null;
 let selSq = null;
@@ -754,7 +762,6 @@ async function gamePage(view, id) {
   gameWatchId = id;
   socket.emit('watch-game', id);
   sjoin('g:' + id);
-
   view.innerHTML =
     '<section class="block game-block">' +
     '<div class="game-layout game-3col">' +
@@ -771,7 +778,6 @@ async function gamePage(view, id) {
     '<div class="panel moves-panel"><h3>Ходы</h3><div class="move-list" id="moveList"></div></div>' +
     '</div>' +
     '</div></section>';
-
   bindGameButtons();
   bindChats();
   updateGameUI(G);
@@ -831,7 +837,7 @@ function updateGameUI(g) {
     const legal = (color && g.turn === color && g.status === 'playing') ? (g.legalMoves || []) : [];
     const targets = selSq ? legal.filter(function (m) { return m.from === selSq; }).map(function (m) { return m.to; }) : [];
     renderBoard(boardBox, g.fen, {
-      lastMove: g.lastMove, sel: selSq, targets,
+      lastMove: g.lastMove, sel: selSq, targets: targets,
       flip: flip, checkSq: g.inCheck ? kingSquare(g.fen, g.turn) : null,
       onSquare: gameSquareClick
     });
@@ -904,7 +910,7 @@ async function doMove(from, to, promotion) {
   try {
     await api('/api/games/' + G.id + '/move', {
       method: 'POST',
-      body: JSON.stringify({ from, to, promotion: promotion || undefined })
+      body: JSON.stringify({ from: from, to: to, promotion: promotion || undefined })
     });
     refreshGame();
   } catch (e) { toast(e.message, 'err'); selSq = null; }
@@ -918,7 +924,7 @@ function openPromo(cb) {
   const overlay = $('#promoOverlay');
   const box = $('#promoChoices');
   box.innerHTML = '';
-  ['q','r','b','n'].forEach(function (k) {
+  ['q', 'r', 'b', 'n'].forEach(function (k) {
     const key = (myColor() === 'w' ? 'w' : 'b') + k.toUpperCase();
     const b = document.createElement('button');
     b.className = 'promo-piece';
@@ -929,7 +935,7 @@ function openPromo(cb) {
   overlay.classList.remove('hidden');
 }
 
-setInterval(function () {
+clockTimer = setInterval(function () {
   if (!G || G.status !== 'playing') return;
   const elapsed = Date.now() - (G._syncAt || Date.now());
   const cw = $('#clockW'), cb = $('#clockB');
@@ -948,7 +954,7 @@ setInterval(function () {
 async function rankingsView(view) {
   view.innerHTML =
     '<section class="block">' +
-    '<div class="page-head"><div><h1>Рейтинги</h1><p>Эло, K=24. Топ-3 получают кубок в профиле</p></div></div>' +
+    '<div class="page-head"><div><h1>Рейтинги</h1><p>Эло, K=24. Топ-3 получают кубок в профиле: золотой, серебряный и бронзовый</p></div></div>' +
     '<div class="panel"><div id="rankTable"><div class="empty-note">Загрузка…</div></div></div>' +
     '</section>';
   try {
@@ -980,7 +986,7 @@ async function profileView(view, id) {
   }
   const rank = all.findIndex(function (p) { return p.id === id; });
   const cup = rank >= 0 && rank < 3 ? '<span class="medal-big">' + MEDALS[rank] + '</span>' : '';
-  const total = (u.wins || 0) + (u.losses || 0) + (u.draws || 0);
+  const total = u.wins + u.losses + u.draws;
   view.innerHTML =
     '<section class="block">' +
     '<div class="profile-head panel">' +
@@ -990,9 +996,9 @@ async function profileView(view, id) {
     '<div class="profile-rating"><b>' + u.rating + '</b><span>рейтинг Эло</span></div>' +
     '</div>' +
     '<div class="stat-grid">' +
-    '<div class="panel stat-card"><b>' + (u.wins || 0) + '</b><span>побед</span></div>' +
-    '<div class="panel stat-card"><b>' + (u.draws || 0) + '</b><span>ничьих</span></div>' +
-    '<div class="panel stat-card"><b>' + (u.losses || 0) + '</b><span>поражений</span></div>' +
+    '<div class="panel stat-card"><b>' + u.wins + '</b><span>побед</span></div>' +
+    '<div class="panel stat-card"><b>' + u.draws + '</b><span>ничьих</span></div>' +
+    '<div class="panel stat-card"><b>' + u.losses + '</b><span>поражений</span></div>' +
     '<div class="panel stat-card"><b>' + (total ? Math.round(100 * u.wins / total) : 0) + '%</b><span>винрейт</span></div>' +
     '<div class="panel stat-card trophy"><b>🏆 ' + (u.tournamentsWon || 0) + '</b><span>побед в турнирах</span></div>' +
     '</div>' +
@@ -1013,17 +1019,17 @@ async function profileView(view, id) {
    ЗАДАЧИ
    ============================================================ */
 const PUZZLES = [
-  { title: 'Мат в 1: ферзь', fen: 'r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 0 1', solution: [{ from: 'f3', to: 'f7' }], hint: 'Классический «учебный мат».' },
-  { title: 'Мат в 1: ладья на последней горизонтали', fen: '6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1', solution: [{ from: 'a1', to: 'a8' }], hint: 'Король заперт своими пешками.' },
-  { title: 'Мат в 1: ладья по краю', fen: '7k/6pp/8/8/8/8/6PP/R5K1 w - - 0 1', solution: [{ from: 'a1', to: 'a8' }], hint: 'Поставьте ладью на 8-ю.' },
-  { title: 'Мат в 1: две ладьи', fen: '7k/R7/8/8/8/8/8/1R5K w - - 0 1', solution: [{ from: 'b1', to: 'b8' }], hint: 'Одна уже держит 7-ю.' },
-  { title: 'Мат в 1: с далёкой вертикали', fen: '6k1/6pp/8/8/8/8/8/K2R4 w - - 0 1', solution: [{ from: 'd1', to: 'd8' }], hint: 'Ладья входит на 8-ю.' }
+  { title: 'Мат в 1: ферзь', fen: 'r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 0 1', solution: [{ from: 'f3', to: 'f7' }], hint: 'Классический «учебный мат» — ферзь бьёт пешку под защитой слона.' },
+  { title: 'Мат в 1: ладья на последней горизонтали', fen: '6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1', solution: [{ from: 'a1', to: 'a8' }], hint: 'Король заперт своими пешками — задний ряд беззащитен.' },
+  { title: 'Мат в 1: ладья по краю', fen: '7k/6pp/8/8/8/8/6PP/R5K1 w - - 0 1', solution: [{ from: 'a1', to: 'a8' }], hint: 'Просто поставьте ладью на 8-ю горизонталь.' },
+  { title: 'Мат в 1: две ладьи', fen: '7k/R7/8/8/8/8/8/1R5K w - - 0 1', solution: [{ from: 'b1', to: 'b8' }], hint: 'Одна ладья уже держит 7-ю горизонталь.' },
+  { title: 'Мат в 1: с далёкой вертикали', fen: '6k1/6pp/8/8/8/8/8/K2R4 w - - 0 1', solution: [{ from: 'd1', to: 'd8' }], hint: 'Ладья входит на 8-ю горизонталь — король не убежит вдоль неё.' }
 ];
 
 function tasksView(view) {
   view.innerHTML =
     '<section class="block">' +
-    '<div class="page-head"><div><h1>Задачи</h1><p>Найдите мат в один ход.</p></div></div>' +
+    '<div class="page-head"><div><h1>Задачи</h1><p>Найдите мат в один ход. Нажмите на фигуру, затем на поле хода.</p></div></div>' +
     '<div class="puzzle-wrap" id="puzzleWrap"></div></section>';
   renderPuzzle(0);
 }
@@ -1032,7 +1038,7 @@ function renderPuzzle(idx) {
   const wrap = $('#puzzleWrap');
   if (!wrap) return;
   if (idx >= PUZZLES.length) {
-    wrap.innerHTML = '<div class="panel success-panel"><h2>🎉 Все задачи решены!</h2><p class="sub">Загляните в лобби.</p><a class="btn btn-primary" href="#/lobby">Играть</a></div>';
+    wrap.innerHTML = '<div class="panel success-panel"><h2>🎉 Все задачи решены!</h2><p class="sub">Отличная работа. Загляните в лобби — там ждут настоящие соперники.</p><a class="btn btn-primary" href="#/lobby">Играть</a></div>';
     return;
   }
   const pz = PUZZLES[idx];
@@ -1050,7 +1056,7 @@ function renderPuzzle(idx) {
 
   let sel = null, solved = false;
   function draw() {
-    renderBoard($('#pzBoard'), pz.fen, { sel, onSquare });
+    renderBoard($('#pzBoard'), pz.fen, { sel: sel, onSquare: onSquare });
   }
   function onSquare(key) {
     if (solved) return;
@@ -1058,8 +1064,8 @@ function renderPuzzle(idx) {
       const ok = pz.solution.some(function (m) { return m.from === sel && m.to === key; });
       if (ok) {
         solved = true;
-        $('#pzMsg').innerHTML = '<b class="ok">✅ Верно!</b>';
-        $('#pzMsg').insertAdjacentHTML('beforeend', '<div class="pz-next"><button class="btn btn-primary" id="pzNext">Следующая →</button></div>');
+        $('#pzMsg').innerHTML = '<b class="ok">✅ Верно! Это мат.</b>';
+        $('#pzMsg').insertAdjacentHTML('beforeend', '<div class="pz-next"><button class="btn btn-primary" id="pzNext">Следующая задача →</button></div>');
         $('#pzNext').onclick = function () { renderPuzzle(idx + 1); };
         sel = null; draw();
         return;
@@ -1081,19 +1087,19 @@ function renderPuzzle(idx) {
 function learnView(view) {
   view.innerHTML =
     '<section class="block">' +
-    '<div class="page-head"><div><h1>Обучение</h1><p>Короткие уроки.</p></div></div>' +
+    '<div class="page-head"><div><h1>Обучение</h1><p>Короткие уроки, чтобы быстро подняться с нуля</p></div></div>' +
     '<div class="cards">' +
-    '<div class="card static"><div class="icon">♟️</div><h3>Ценность фигур</h3><p>Пешка — 1, конь и слон — 3, ладья — 5, ферзь — 9.</p></div>' +
-    '<div class="card static"><div class="icon">🎯</div><h3>Тактика: вилка</h3><p>Конь на d5 часто атакует короля и ферзя одновременно.</p></div>' +
-    '<div class="card static"><div class="icon">🛡️</div><h3>Безопасность короля</h3><p>Рокировка в первые 10 ходов — лучший щит.</p></div>' +
-    '<div class="card static"><div class="icon">👣</div><h3>Развитие</h3><p>В дебюте выводите коней и слонов, занимайте центр.</p></div>' +
-    '<div class="card static"><div class="icon">👑</div><h3>Эндшпиль</h3><p>Король — боевая фигура: в эндшпиле ведите его в центр.</p></div>' +
-    '<div class="card static"><div class="icon">⏱️</div><h3>Время</h3><p>Не тратьте минуты на простые ходы.</p></div>' +
+    '<div class="card static"><div class="icon">♟️</div><h3>Ценность фигур</h3><p>Пешка — 1, конь и слон — 3, ладья — 5, ферзь — 9. Меняйте так, чтобы в итоге получить больше.</p></div>' +
+    '<div class="card static"><div class="icon">🎯</div><h3>Тактика: вилка</h3><p>Конь на d5 часто атакует короля и ферзя одновременно — соперник спасёт лишь одного.</p></div>' +
+    '<div class="card static"><div class="icon">🛡️</div><h3>Безопасность короля</h3><p>Рокировка в первые 10 ходов — лучший щит. Не двигайте пешки перед королём без нужды.</p></div>' +
+    '<div class="card static"><div class="icon">👣</div><h3>Развитие</h3><p>В дебюте выводите коней и слонов, занимайте центр, не ходите одной фигурой дважды без причины.</p></div>' +
+    '<div class="card static"><div class="icon">👑</div><h3>Эндшпиль</h3><p>Король — боевая фигура: в эндшпиле ведите его в центр. Активный король часто решает партию.</p></div>' +
+    '<div class="card static"><div class="icon">⏱️</div><h3>Время</h3><p>Не тратьте минуты на простые ходы. Прилечьте мысль там, где позиция острая.</p></div>' +
     '</div></section>';
 }
 
 /* ============================================================
-   СТАРТ
+   МОБИЛЬНОЕ МЕНЮ И СТАРТ
    ============================================================ */
 (function () {
   const burger = $('#burger'), mm = $('#mobileMenu');
