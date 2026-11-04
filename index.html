@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ChessHub — Играй в шахматы онлайн</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♞</text></svg>">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <nav class="nav">
+    <a class="logo" href="#/">♞ Chess<span>Hub</span></a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#/lobby" data-nav="lobby">Играть</a></li>
+      <li><a href="#/tournaments" data-nav="tournaments">Турниры</a></li>
+      <li><a href="#/rankings" data-nav="rankings">Рейтинги</a></li>
+      <li><a href="#/tasks" data-nav="tasks">Задачи</a></li>
+      <li><a href="#/learn" data-nav="learn">Обучение</a></li>
+    </ul>
+    <div class="nav-actions" id="authArea"></div>
+    <button class="burger" id="burger" aria-label="Меню">☰</button>
+  </nav>
+  <div class="mobile-menu" id="mobileMenu"></div>
+</header>
+
+<main id="view">
+  <div class="loading">Загрузка…</div>
+</main>
+
+<footer>
+  <div class="footer-inner">© 2025 ChessHub — Правила · Конфиденциальность · Контакты</div>
+</footer>
+
+<!-- Модалка входа / регистрации -->
+<div class="modal-overlay hidden" id="authOverlay">
+  <div class="modal">
+    <button class="modal-close" id="authClose" type="button">✕</button>
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-tab="login" type="button">Вход</button>
+      <button class="auth-tab" data-tab="signup" type="button">Регистрация</button>
+    </div>
+    <form id="authForm" autocomplete="off">
+      <label class="field" id="nameField">Ник или email
+        <input id="authName" type="text" maxlength="20" placeholder="Ваш ник или email" required>
+      </label>
+      <label class="field hidden" id="emailField">Email
+        <input id="authEmail" type="email" maxlength="60" placeholder="you@example.com">
+      </label>
+      <label class="field">Пароль
+        <input id="authPass" type="password" minlength="6" maxlength="64" placeholder="Минимум 6 символов" required>
+      </label>
+      <div class="auth-error hidden" id="authError"></div>
+      <button class="btn btn-primary btn-lg btn-block" id="authSubmit" type="submit">Войти</button>
+    </form>
+  </div>
+</div>
+
+<!-- Модалка превращения пешки -->
+<div class="modal-overlay hidden" id="promoOverlay">
+  <div class="modal modal-small">
+    <h3 class="promo-title">Во что превратить пешку?</h3>
+    <div class="promo-choices" id="promoChoices"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
