@@ -1,6 +1,6 @@
 {
   "name": "chesshub",
-  "version": "1.2.0",
+  "version": "1.1.0",
   "description": "ChessHub — онлайн-шахматная платформа",
   "main": "server.js",
   "type": "commonjs",
@@ -14,7 +14,6 @@
   "dependencies": {
     "express": "^4.19.2",
     "socket.io": "^4.7.5",
-    "chess.js": "^1.0.0",
-    "pg": "^8.11.5"
+    "chess.js": "^1.0.0"
   }
 }
