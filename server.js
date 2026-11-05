@@ -14,6 +14,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
+
 /* ================= Утилиты ================= */
 const uid = () => crypto.randomBytes(8).toString('hex');
 const newToken = () => crypto.randomBytes(24).toString('hex');
@@ -222,7 +223,6 @@ async function saveTour(t) {
   );
 }
 
-/* Синхронный расчёт по уже загруженному объекту */
 async function tourScore(t) {
   const m = new Map();
   t.players.forEach(id => m.set(id, { id, score: 0, wins: 0, draws: 0, losses: 0, played: 0, opps: [] }));
