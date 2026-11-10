@@ -25,7 +25,7 @@ body {
   display: flex;
   flex-direction: column;
 }
-main { flex: 1; }
+main { flex: 1; min-width: 0; }
 a { color: inherit; }
 img { max-width: 100%; }
 .hidden { display: none !important; }
@@ -296,7 +296,7 @@ footer { border-top: 1px solid rgba(255,255,255,.06); padding: 24px 20px; }
 .chat-panel {
   background: var(--bg-elevated); border: 1px solid rgba(255,255,255,.06);
   border-radius: var(--radius); display: flex; flex-direction: column;
-  height: 520px; overflow: hidden;
+  height: 520px; overflow: hidden; min-width: 0;
 }
 .chat-head {
   padding: 14px 16px; font-weight: 700; font-size: .95rem;
@@ -334,7 +334,7 @@ footer { border-top: 1px solid rgba(255,255,255,.06); padding: 24px 20px; }
 .badge.finished { background: rgba(255,255,255,.08); color: var(--text-muted); }
 .badge.tc { background: rgba(255,255,255,.08); color: var(--text); }
 
-/* ИСПРАВЛЕНО: турнирная сетка — фиксированная колонка чата, остальное гибкое */
+/* ИСПРАВЛЕНО: Турниры */
 .tour-layout {
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
@@ -399,11 +399,13 @@ footer { border-top: 1px solid rgba(255,255,255,.06); padding: 24px 20px; }
 .gr-score { color: var(--text); margin: 0 8px; }
 .gr-info { color: var(--text-muted); font-size: .82rem; }
 
-/* ===== ПАРТИЯ — трёхколоночный layout ===== */
+/* ===== ПАРТИЯ (ТРИ КОЛОНКИ) ===== */
 .game-block { padding-top: 24px; }
+
+/* Исправлено: строгая сетка, фиксированная высота, чтобы доска не вылезала */
 .game-layout.game-3col {
   display: grid;
-  grid-template-columns: minmax(200px, 260px) minmax(0, 1fr) minmax(180px, 240px);
+  grid-template-columns: 280px minmax(0, 1fr) 240px;
   gap: 20px;
   align-items: start;
   max-width: 1200px;
@@ -416,11 +418,11 @@ footer { border-top: 1px solid rgba(255,255,255,.06); padding: 24px 20px; }
   gap: 16px;
   position: sticky;
   top: 84px;
+  min-width: 0;
 }
 .game-3col .game-side-left .chat-panel {
   height: calc(100vh - 180px);
-  max-height: 620px;
-  min-height: 360px;
+  max-height: 600px;
 }
 .game-3col .game-side-right .moves-panel { margin-bottom: 0; }
 .game-3col .game-side-right .move-list {
@@ -429,18 +431,19 @@ footer { border-top: 1px solid rgba(255,255,255,.06); padding: 24px 20px; }
   overflow-y: auto;
 }
 
-/* ИСПРАВЛЕНО: доска в игре — вписывается в экран по высоте и ширине */
+/* Самая важная часть: ограничиваем доску по высоте и ширине */
 .game-3col .game-board-col {
-  max-width: 100%;
-  margin: 0 auto;
-  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  width: 100%;
 }
+
 .game-3col .board-wrap.game-board {
   width: 100%;
-  max-width: min(calc(100vh - 240px), 560px);
+  max-width: min(calc(100vh - 240px), 560px); /* Берем минимум из высоты экрана и 560px */
   max-height: calc(100vh - 240px);
   aspect-ratio: 1 / 1;
   margin: 0 auto;
@@ -506,13 +509,8 @@ footer { border-top: 1px solid rgba(255,255,255,.06); padding: 24px 20px; }
 /* ===== АДАПТИВ ===== */
 @media (max-width: 1100px) {
   .game-layout.game-3col {
-    grid-template-columns: minmax(180px, 220px) minmax(0, 1fr) minmax(160px, 200px);
+    grid-template-columns: 220px minmax(0, 1fr) 200px;
     gap: 14px;
-  }
-  .game-3col .board-wrap.game-board,
-  .gplayer,
-  .game-actions {
-    max-width: min(calc(100vh - 240px), 480px);
   }
 }
 
@@ -526,10 +524,17 @@ footer { border-top: 1px solid rgba(255,255,255,.06); padding: 24px 20px; }
   .game-3col .game-side-left,
   .game-3col .game-side-right { position: static; }
   .game-3col .game-side-left .chat-panel { height: 320px; min-height: 320px; max-height: 320px; }
+  
+  /* На планшетах ограничиваем доску шириной контейнера, а не высотой экрана */
   .game-3col .board-wrap.game-board,
   .gplayer,
   .game-actions {
-    max-width: min(100%, 560px);
+    max-width: 100%;
+    max-height: none;
+  }
+  .game-3col .board-wrap.game-board {
+    aspect-ratio: 1 / 1;
+    max-width: 560px;
   }
 }
 
